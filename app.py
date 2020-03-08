@@ -7,8 +7,8 @@ import os
 try:
     from app_secrets import MINIO_ACCESS_KEY, MINIO_ENCRYPT_KEY
 except:
-    access_key=os.getenv("MINIO_ACCESS_KEY", MINIO_ACCESS_KEY),
-    secret_key=os.getenv("MINIO_SECRET_KEY", MINIO_ENCRYPT_KEY),
+    access_key=os.getenv("MINIO_ACCESS_KEY")
+    secret_key=os.getenv("MINIO_SECRET_KEY")
 
 
 def main():
