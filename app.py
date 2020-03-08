@@ -50,7 +50,7 @@ def main():
         page is merely a data visualization exercise!  
     """)
 
-    countries = ["Germany", "Austria", "Belgium", "France", "Italy", "Spain", "Switzerland"]
+    countries = ["Germany", "Austria", "Belgium", "France", "Greece", "Italy", "Netherlands", "Norway", "Spain", "Sweden", "Switzerland", "UK"]
 
     analysis = st.sidebar.selectbox("Analysis", ["Overview", "By Country"])
 
