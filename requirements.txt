@@ -1,0 +1,6 @@
+lxml
+requests
+pip
+pandas
+prefect[viz]
+streamlit

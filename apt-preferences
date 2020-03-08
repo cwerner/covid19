@@ -1,0 +1,4 @@
+APT {
+  Install-Recommends "false";
+}
+
