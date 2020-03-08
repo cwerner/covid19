@@ -2,5 +2,5 @@ lxml
 requests
 pip
 pandas
-prefect[viz]
+prefect
 streamlit
