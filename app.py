@@ -99,7 +99,6 @@ def main():
             </div>
             """, unsafe_allow_html=True)
 
- a case fatality rate (CFR, also case fatality risk, or case fatality ratio) is the ratio of deaths from a certain disease to the total number of people diagnosed with this disease for a certain period of time.
 
     elif analysis == "By Country":        
 
