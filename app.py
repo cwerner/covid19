@@ -91,10 +91,15 @@ def main():
         st.markdown(f"""\
             <div style="font-size: small">
             [*] Note: Currently only the following countries are provided: {', '.join(countries)}.
-            Also, please take the fatality rate with a grain of salt since this number is 
-            highly dependend on the total number of tests conducted in the country.
+            Also, please take the case fatality rate (CFR, the ratio of deaths to the total number of
+            people diagnosed with COVID-19) with a grain of salt since this number is 
+            highly dependend on the total number of tests conducted in a country. In the early stages
+            of the outbreak often mainly severe cases with clear symptoms are detected. Thus mild cases
+            are not recorded which skews the CFR.
             </div>
             """, unsafe_allow_html=True)
+
+ a case fatality rate (CFR, also case fatality risk, or case fatality ratio) is the ratio of deaths from a certain disease to the total number of people diagnosed with this disease for a certain period of time.
 
     elif analysis == "By Country":        
 
