@@ -1,8 +1,10 @@
-import pydeck as pdk
+import datetime
 import streamlit as st
+from streamlit import caching
 import pandas as pd
 import altair as alt
 import os
+
 
 try:
     from app_secrets import MINIO_ACCESS_KEY, MINIO_ENCRYPT_KEY
@@ -11,7 +13,6 @@ except:
     secret_key=os.getenv("MINIO_SECRET_KEY")
 
 
-import pandas as pd
 
 @st.cache
 def read_data():
@@ -45,21 +46,30 @@ def main():
     st.title("🦠 Covid-19 Data Explorer")
     st.markdown("""\
         This app illustrates the spread of COVID-19 in select countries over time.
-        Data is ingested from [Johns Hopkins Univerity, Center for System Science & Engineering (GitHub)](https://github.com/CSSEGISandData/COVID-19).
-        Due to the situation changing rapidly data might be out of date. Please consult your governmental organizations information sites for thorough advice. This
-        page is merely a data visualization exercise!  
     """)
 
     countries = ["Germany", "Austria", "Belgium", "France", "Greece", "Italy", "Netherlands", "Norway", "Spain", "Sweden", "Switzerland", "UK"]
 
-    analysis = st.sidebar.selectbox("Analysis", ["Overview", "By Country"])
-
+    analysis = st.sidebar.selectbox("Choose Analysis", ["Overview", "By Country"])
 
     if analysis == "Overview":
 
+        st.header("COVID-19 cases and fatality rate in Europe")
+        st.markdown("""\
+            These are the reported case numbers for a selection of european countries"""
+            f""" (currently only {', '.join(countries)}). """
+            """The case fatality rate (CFR) is calculated as:  
+            $$
+            CFR[\%] = \\frac{fatalities}{\\textit{all cases}}
+            $$
+
+            ℹ️ You can select/ deselect countries and switch between linear and log scales.
+            """)
+
         confirmed, deaths, recovered = read_data()
 
-        multiselection = st.multiselect("Select countries:", countries, default=["Germany", "France", "Italy"])
+        multiselection = st.multiselect("Select countries:", countries, default=countries)
+        logscale = st.checkbox("Log scale", True)
 
         confirmed = confirmed[confirmed["Country/Region"].isin(multiselection)]
         confirmed = confirmed.drop(["Lat", "Long"],axis=1)
@@ -72,11 +82,20 @@ def main():
         frate = confirmed[["country"]]
         frate["frate"] = (deaths.deaths / confirmed.confirmed)*100
 
-        st.subheader("Confirmed cases and fatality rate in Europe [*]")
+
+        SCALE = alt.Scale(type='linear')
+        if logscale:
+            confirmed["confirmed"] += 0.00001
+
+            confirmed = confirmed[confirmed.index > '2020-02-16']
+            frate = frate[frate.index > '2020-02-16']
+            
+            SCALE = alt.Scale(type='log', domain=[10, int(max(confirmed.confirmed))], clamp=True)
+
 
         c2 = alt.Chart(confirmed.reset_index()).properties(height=150).mark_line().encode(
             x=alt.X("date:T", title="Date"),
-            y=alt.Y("confirmed:Q", title="Cases", scale=alt.Scale(type='linear')),
+            y=alt.Y("confirmed:Q", title="Cases", scale=SCALE),
             color=alt.Color('country:N', title="Country")
         )
 
@@ -90,13 +109,12 @@ def main():
 
         st.markdown(f"""\
             <div style="font-size: small">
-            [*] Note: Currently only the following countries are provided: {', '.join(countries)}.
-            Also, please take the case fatality rate (CFR, the ratio of deaths to the total number of
-            people diagnosed with COVID-19) with a grain of salt since this number is 
+            ⚠️ Please take the CFR with a grain of salt. The ratio is 
             highly dependend on the total number of tests conducted in a country. In the early stages
             of the outbreak often mainly severe cases with clear symptoms are detected. Thus mild cases
             are not recorded which skews the CFR.
-            </div>
+            </div><br/>  
+
             """, unsafe_allow_html=True)
 
 
@@ -104,7 +122,14 @@ def main():
 
         confirmed, deaths, recovered = read_data()
 
-        st.subheader("Country statistics")
+        st.header("Country statistics")
+        st.markdown("""\
+            The reported number of active, recovered and deceased COVID-19 cases by country """
+            f""" (currently only {', '.join(countries)}).  
+            """
+            """  
+            ℹ️ You can select countries and plot data as cummulative counts or new active cases per day. 
+            """)
 
         # selections
         selection = st.selectbox("Select country:", countries)
@@ -125,37 +150,31 @@ def main():
         df = pd.concat([confirmed, deaths, recovered], axis=1)
         df["active"] = df.confirmed - df.deaths - df.recovered
 
-        if cummulative == 'new cases':
-            df = df.diff()
-
-        dfm = pd.melt(df.reset_index(), id_vars=["date"], value_vars=variables)
-        
         colors = ["orange", "purple", "gray"]
 
-        brush = alt.selection(type='interval', encodings=['x'])
+        value_vars = variables
+        SCALE = alt.Scale(domain=variables, range=colors)
+        if cummulative == 'new cases':
+            value_vars = ['active']
+            df = df[value_vars]
+            df = df.diff()
+            df["active"][df.active < 0] = 0
+            SCALE = alt.Scale(domain=variables[0:1], range=colors[0:1]) 
 
+        dfm = pd.melt(df.reset_index(), id_vars=["date"], value_vars=value_vars)
+      
         c = alt.Chart(dfm.reset_index()).properties(height=200).mark_bar(size=10).encode(
-            x=alt.X("date:T", title="Date", scale=alt.Scale(type='linear')),
+            x=alt.X("date:T", title="Date"),
             y=alt.Y("value:Q", title="Cases", scale=alt.Scale(type='linear')),
-            color=alt.Color('variable:N', title="Category", scale=alt.Scale(domain=variables, range=colors))
+            color=alt.Color('variable:N', title="Category", scale=SCALE),
         )
-        # ).add_selection(
-        #     brush
-        # )
         st.altair_chart(c, use_container_width=True)
-
-        st.markdown(f"""\
-            <div style="font-size: small">
-            [*] Note: Currently only the following countries are provided: {', '.join(countries)}.
-            </div>  
-
-            """, unsafe_allow_html=True)
 
     st.info("""\
           
-        by: [C. Werner](https://www.christianwerner.net) | source: [GitHub](https://www.github.com/cwerner/covid19)  
+        by: [C. Werner](https://www.christianwerner.net) | source: [GitHub](https://www.github.com/cwerner/covid19)
+        | data source: [Johns Hopkins Univerity (GitHub)](https://github.com/CSSEGISandData/COVID-19). 
     """)
-
 
 
     # ----------------------
