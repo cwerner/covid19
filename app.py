@@ -59,7 +59,7 @@ def transform2(df, collabel='confirmed'):
 def main():
     st.title("🦠 Covid-19 Data Explorer")
     st.markdown("""\
-        This app illustrates the spread of COVID-19 in select countries over time.
+        This app illustrates the spread of COVID-19 in select countries of Europe over time.
     """)
 
     countries = ["Germany", "Austria", "Belgium", "France", "Greece", "Italy", "Netherlands", "Norway", "Poland", "Romania", "Spain", "Sweden", "Switzerland", "UK"]
@@ -124,12 +124,12 @@ def main():
         #def calc_per_100k
 
         # case per 100.000 inhabitants
-        per100k = confirmed.loc[confirmed.index.max()]
-        per100k['inhabitants'] = per100k.apply(lambda x: inhabitants[x['country']] * 1_000_000, axis=1)
-        per100k['per100k'] = per100k.confirmed / per100k.inhabitants * 100_000
+        per100k = confirmed.loc[confirmed.index.max()].copy()
+        per100k.loc[:,'inhabitants'] = per100k.apply(lambda x: inhabitants[x['country']] * 1_000_000, axis=1)
+        per100k.loc[:,'per100k'] = per100k.confirmed / per100k.inhabitants * 100_000
         per100k = per100k.set_index("country")
         per100k = per100k.sort_values(ascending=False, by='per100k')
-        per100k['per100k'] = per100k.per100k.round(2)
+        per100k.loc[:,'per100k'] = per100k.per100k.round(2)
 
         c4 = alt.Chart(per100k.reset_index()).properties(width=75).mark_bar().encode(
             x=alt.X("per100k:Q", title="Cases per 100k inhabitants"),
@@ -139,7 +139,6 @@ def main():
                      alt.Tooltip('per100k:Q', title='Cases per 100k'),
                      alt.Tooltip('inhabitants:Q', title='Inhabitants [mio]')]
         )
-
 
         st.altair_chart(alt.hconcat(c4, alt.vconcat(c2, c3)), use_container_width=True)
 
