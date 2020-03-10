@@ -96,6 +96,9 @@ def main():
         frate = confirmed[["country"]]
         frate["frate"] = (deaths.deaths / confirmed.confirmed)*100
 
+        # saveguard for empty selection 
+        if len(multiselection) == 0:
+            return 
 
         SCALE = alt.Scale(type='linear')
         if logscale:
@@ -120,13 +123,9 @@ def main():
             color=alt.Color('country:N', title="Country")
         )
 
-
-        #def calc_per_100k
-
-        # case per 100.000 inhabitants
-        per100k = confirmed.loc[confirmed.index.max()].copy()
-        per100k.loc[:,'inhabitants'] = per100k.apply(lambda x: inhabitants[x['country']] * 1_000_000, axis=1)
-        per100k.loc[:,'per100k'] = per100k.confirmed / per100k.inhabitants * 100_000
+        per100k = confirmed.loc[[confirmed.index.max()]].copy()
+        per100k.loc[:,'inhabitants'] = per100k.apply(lambda x: inhabitants[x['country']], axis=1)
+        per100k.loc[:,'per100k'] = per100k.confirmed / (per100k.inhabitants * 1_000_000) * 100_000
         per100k = per100k.set_index("country")
         per100k = per100k.sort_values(ascending=False, by='per100k')
         per100k.loc[:,'per100k'] = per100k.per100k.round(2)
