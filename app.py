@@ -12,7 +12,21 @@ except:
     access_key=os.getenv("MINIO_ACCESS_KEY")
     secret_key=os.getenv("MINIO_SECRET_KEY")
 
-
+# numbers for 2019
+inhabitants = {'Germany': 83.16,
+            'France': 67.2,
+            'UK': 67.1,
+            'Italy': 60.23,
+            'Spain': 47.05,
+            'Poland': 37.97,
+            'Romania': 19.28,
+            'Netherlands': 17.34,
+            'Belgium': 11.49,
+            'Greece': 10.69,
+            'Sweden': 10.15, 
+            'Switzerland': 8.57,
+            'Austria': 8.91,
+            'Norway': 5.36}
 
 @st.cache
 def read_data():
@@ -48,7 +62,7 @@ def main():
         This app illustrates the spread of COVID-19 in select countries over time.
     """)
 
-    countries = ["Germany", "Austria", "Belgium", "France", "Greece", "Italy", "Netherlands", "Norway", "Spain", "Sweden", "Switzerland", "UK"]
+    countries = ["Germany", "Austria", "Belgium", "France", "Greece", "Italy", "Netherlands", "Norway", "Poland", "Romania", "Spain", "Sweden", "Switzerland", "UK"]
 
     analysis = st.sidebar.selectbox("Choose Analysis", ["Overview", "By Country"])
 
@@ -105,7 +119,29 @@ def main():
             y=alt.Y("frate:Q", title="Fatality rate [%]", scale=alt.Scale(type='linear')),
             color=alt.Color('country:N', title="Country")
         )
-        st.altair_chart(alt.vconcat(c2, c3), use_container_width=True)
+
+
+        #def calc_per_100k
+
+        # case per 100.000 inhabitants
+        per100k = confirmed.loc[confirmed.index.max()]
+        per100k['inhabitants'] = per100k.apply(lambda x: inhabitants[x['country']] * 1_000_000, axis=1)
+        per100k['per100k'] = per100k.confirmed / per100k.inhabitants * 100_000
+        per100k = per100k.set_index("country")
+        per100k = per100k.sort_values(ascending=False, by='per100k')
+        per100k['per100k'] = per100k.per100k.round(2)
+
+        c4 = alt.Chart(per100k.reset_index()).properties(width=75).mark_bar().encode(
+            x=alt.X("per100k:Q", title="Cases per 100k inhabitants"),
+            y=alt.Y("country:N", title="Countries", sort=None),
+            color=alt.Color('country:N', title="Country"),
+            tooltip=[alt.Tooltip('country:N', title='Country'), 
+                     alt.Tooltip('per100k:Q', title='Cases per 100k'),
+                     alt.Tooltip('inhabitants:Q', title='Inhabitants [mio]')]
+        )
+
+
+        st.altair_chart(alt.hconcat(c4, alt.vconcat(c2, c3)), use_container_width=True)
 
         st.markdown(f"""\
             <div style="font-size: small">
