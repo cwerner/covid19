@@ -15,7 +15,7 @@ except:
 # numbers for 2019
 inhabitants = {'Germany': 83.16,
             'France': 67.2,
-            'UK': 67.1,
+            'United Kingdom': 67.1,
             'Italy': 60.23,
             'Spain': 47.05,
             'Poland': 37.97,
@@ -67,7 +67,7 @@ def main():
         This app illustrates the spread of COVID-19 in select countries of Europe over time.
     """)
 
-    countries = ["Germany", "Austria", "Belgium", "France", "Greece", "Italy", "Netherlands", "Norway", "Poland", "Romania", "Spain", "Sweden", "Switzerland", "UK"]
+    countries = ["Germany", "Austria", "Belgium", "France", "Greece", "Italy", "Netherlands", "Norway", "Poland", "Romania", "Spain", "Sweden", "Switzerland", "United Kingdom"]
 
     analysis = st.sidebar.selectbox("Choose Analysis", ["Overview", "By Country"])
 
