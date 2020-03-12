@@ -38,6 +38,11 @@ def read_data():
     confirmed = pd.read_csv(url_confirmed, index_col=0)
     deaths = pd.read_csv(url_deaths, index_col=0)
     recovered = pd.read_csv(url_recovered, index_col=0)
+
+    # sum over potentially duplicate rows (France and their territories)
+    confirmed = confirmed.groupby("Country/Region").sum().reset_index()
+    deaths = deaths.groupby("Country/Region").sum().reset_index()
+    recovered = recovered.groupby("Country/Region").sum().reset_index()
     return (confirmed, deaths, recovered)
 
 def transform(df, collabel='confirmed'):
