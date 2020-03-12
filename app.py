@@ -26,7 +26,8 @@ inhabitants = {'Germany': 83.16,
             'Sweden': 10.15, 
             'Switzerland': 8.57,
             'Austria': 8.91,
-            'Norway': 5.36}
+            'Norway': 5.36,
+            'Denmark': 5.77}
 
 @st.cache
 def read_data():
@@ -67,7 +68,7 @@ def main():
         This app illustrates the spread of COVID-19 in select countries of Europe over time.
     """)
 
-    countries = ["Germany", "Austria", "Belgium", "France", "Greece", "Italy", "Netherlands", "Norway", "Poland", "Romania", "Spain", "Sweden", "Switzerland", "United Kingdom"]
+    countries = ["Germany", "Austria", "Belgium", "Denmark", "France", "Greece", "Italy", "Netherlands", "Norway", "Poland", "Romania", "Spain", "Sweden", "Switzerland", "United Kingdom"]
 
     analysis = st.sidebar.selectbox("Choose Analysis", ["Overview", "By Country"])
 
