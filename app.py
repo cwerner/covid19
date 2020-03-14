@@ -44,6 +44,18 @@ def read_data():
     confirmed = confirmed.groupby("Country/Region").sum().reset_index()
     deaths = deaths.groupby("Country/Region").sum().reset_index()
     recovered = recovered.groupby("Country/Region").sum().reset_index()
+
+    # data bug, discard 03/13
+    confirmed = confirmed.drop('3/13/20', axis=1)
+    deaths = deaths.drop('3/13/20', axis=1)
+    recovered = recovered.drop('3/13/20', axis=1)
+    try:
+        confirmed = confirmed.drop('3/14/20', axis=1)
+        deaths = deaths.drop('3/14/20', axis=1)
+        recovered = recovered.drop('3/14/20', axis=1)
+    except:
+        pass
+
     return (confirmed, deaths, recovered)
 
 def transform(df, collabel='confirmed'):
@@ -67,6 +79,8 @@ def main():
     st.markdown("""\
         This app illustrates the spread of COVID-19 in select countries of Europe over time.
     """)
+
+    st.error("⚠️ There is currently an issue in the datasource of JHU. Data for 03/13 is invalid and thus removed!")
 
     countries = ["Germany", "Austria", "Belgium", "Denmark", "France", "Greece", "Italy", "Netherlands", "Norway", "Poland", "Romania", "Spain", "Sweden", "Switzerland", "United Kingdom"]
 
