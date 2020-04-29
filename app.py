@@ -1,4 +1,5 @@
 import datetime
+from functools import reduce
 import streamlit as st
 from streamlit import caching
 import pandas as pd
@@ -45,16 +46,6 @@ def read_data():
     deaths = deaths.groupby("Country/Region").sum().reset_index()
     recovered = recovered.groupby("Country/Region").sum().reset_index()
 
-    # # data bug, discard 03/13
-    # confirmed = confirmed.drop('3/13/20', axis=1)
-    # deaths = deaths.drop('3/13/20', axis=1)
-    # recovered = recovered.drop('3/13/20', axis=1)
-    # try:
-    #     confirmed = confirmed.drop('3/14/20', axis=1)
-    #     deaths = deaths.drop('3/14/20', axis=1)
-    #     recovered = recovered.drop('3/14/20', axis=1)
-    # except:
-    #     pass
 
     return (confirmed, deaths, recovered)
 
@@ -105,7 +96,7 @@ def main():
         confirmed, deaths, recovered = read_data()
 
         multiselection = st.multiselect("Select countries:", countries, default=countries)
-        logscale = st.checkbox("Log scale", True)
+        logscale = st.checkbox("Log scale", False)
 
         confirmed = confirmed[confirmed["Country/Region"].isin(multiselection)]
         confirmed = confirmed.drop(["Lat", "Long"],axis=1)
@@ -203,19 +194,18 @@ def main():
 
         variables = ["active", "deaths", "recovered"]
 
-        df = pd.concat([confirmed, deaths, recovered], axis=1)
-        df["active"] = df.confirmed - df.deaths - df.recovered
+        df = reduce(lambda a,b: pd.merge(a,b, on='date'), [confirmed, recovered, deaths])
+        df["active"] = df.confirmed - (df.deaths + df.recovered)
 
-        colors = ["orange", "purple", "gray"]
+        colors = ["orange", "purple", "gray", "orange"]
 
         value_vars = variables
         SCALE = alt.Scale(domain=variables, range=colors)
         if cummulative == 'new cases':
-            value_vars = ['active']
-            df = df[value_vars]
-            df = df.diff()
-            df["active"][df.active < 0] = 0
-            SCALE = alt.Scale(domain=variables[0:1], range=colors[0:1]) 
+            value_vars = ["new"]
+            df["new"] = df.confirmed - df.shift(1).confirmed
+            df["new"].loc[df.new < 0]  = 0
+            SCALE = alt.Scale(domain=["new"], range=["orange"]) 
 
         dfm = pd.melt(df.reset_index(), id_vars=["date"], value_vars=value_vars)
       
@@ -224,7 +214,23 @@ def main():
             y=alt.Y("value:Q", title="Cases", scale=alt.Scale(type='linear')),
             color=alt.Color('variable:N', title="Category", scale=SCALE),
         )
-        st.altair_chart(c, use_container_width=True)
+
+        if cummulative != 'new cases':
+            st.altair_chart(c, use_container_width=True)
+        else:
+            # add smooth 7-day trend
+            rm_7day = df[['new']].rolling('7D').mean().rename(columns={'new': 'value'})
+            c_7day = alt.Chart(rm_7day.reset_index()).properties(height=200).mark_line(strokeDash=[1,1], color='red').encode(
+                x=alt.X("date:T", title="Date"),
+                y=alt.Y("value:Q", title="Cases", scale=alt.Scale(type='linear')),
+                #color=alt.Color('variable:N', title="Category"),
+                #opacity='7-day avg'
+            )
+            st.altair_chart((c + c_7day), use_container_width=True)
+            st.markdown(f"""\
+                <div style="font-size: small">Daily reported new cases (incl. 7-day average).</div><br/>
+                """, unsafe_allow_html=True)
+
 
     st.info("""\
           
