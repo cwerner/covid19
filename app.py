@@ -214,8 +214,7 @@ def main():
             {val: i for i, val in enumerate(variables[::-1])}
         )
 
-        # define chart, type (bar/ area) is given later
-        c = alt.Chart(dfm.reset_index()).properties(height=200).encode(
+        c = alt.Chart(dfm.reset_index()).mark_bar().properties(height=200).encode(
             x=alt.X("date:T", title="Date"),
             y=alt.Y("sum(value):Q", title="Cases", scale=alt.Scale(type='linear')),
             color=alt.Color('variable:N', title="Category", scale=SCALE), #, sort=alt.EncodingSortField('value', order='ascending')),
@@ -223,7 +222,7 @@ def main():
         )
 
         if cummulative != 'new cases':
-            st.altair_chart(c.mark_area(size=10), use_container_width=True)
+            st.altair_chart(c, use_container_width=True)
         else:
             # add smooth 7-day trend
             rm_7day = df[['new']].rolling('7D').mean().rename(columns={'new': 'value'})
@@ -231,7 +230,7 @@ def main():
                 x=alt.X("date:T", title="Date"),
                 y=alt.Y("value:Q", title="Cases", scale=alt.Scale(type='linear')),
             )
-            st.altair_chart((c.mark_bar(size=10) + c_7day), use_container_width=True)
+            st.altair_chart((c + c_7day), use_container_width=True)
             st.markdown(f"""\
                 <div style="font-size: small">Daily reported new cases (incl. 7-day average).</div><br/>
                 """, unsafe_allow_html=True)
