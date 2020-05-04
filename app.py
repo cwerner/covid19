@@ -192,12 +192,12 @@ def main():
         recovered = recovered[recovered["Country/Region"] == selection].iloc[:,3:]
         recovered = transform(recovered, collabel="recovered")
 
-        variables = ["active", "deaths", "recovered"]
-
+        
         df = reduce(lambda a,b: pd.merge(a,b, on='date'), [confirmed, recovered, deaths])
         df["active"] = df.confirmed - (df.deaths + df.recovered)
 
-        colors = ["orange", "purple", "gray", "orange"]
+        variables = ["recovered", "active", "deaths"]
+        colors = ["steelblue", "orange", "black"]
 
         value_vars = variables
         SCALE = alt.Scale(domain=variables, range=colors)
@@ -208,25 +208,30 @@ def main():
             SCALE = alt.Scale(domain=["new"], range=["orange"]) 
 
         dfm = pd.melt(df.reset_index(), id_vars=["date"], value_vars=value_vars)
-      
-        c = alt.Chart(dfm.reset_index()).properties(height=200).mark_bar(size=10).encode(
+
+        # introduce order col as altair does auto-sort on stacked elements
+        dfm['order'] = dfm['variable'].replace(
+            {val: i for i, val in enumerate(variables[::-1])}
+        )
+
+        # define chart, type (bar/ area) is given later
+        c = alt.Chart(dfm.reset_index()).properties(height=200).encode(
             x=alt.X("date:T", title="Date"),
-            y=alt.Y("value:Q", title="Cases", scale=alt.Scale(type='linear')),
-            color=alt.Color('variable:N', title="Category", scale=SCALE),
+            y=alt.Y("sum(value):Q", title="Cases", scale=alt.Scale(type='linear')),
+            color=alt.Color('variable:N', title="Category", scale=SCALE), #, sort=alt.EncodingSortField('value', order='ascending')),
+            order='order'
         )
 
         if cummulative != 'new cases':
-            st.altair_chart(c, use_container_width=True)
+            st.altair_chart(c.mark_area(size=10), use_container_width=True)
         else:
             # add smooth 7-day trend
             rm_7day = df[['new']].rolling('7D').mean().rename(columns={'new': 'value'})
             c_7day = alt.Chart(rm_7day.reset_index()).properties(height=200).mark_line(strokeDash=[1,1], color='red').encode(
                 x=alt.X("date:T", title="Date"),
                 y=alt.Y("value:Q", title="Cases", scale=alt.Scale(type='linear')),
-                #color=alt.Color('variable:N', title="Category"),
-                #opacity='7-day avg'
             )
-            st.altair_chart((c + c_7day), use_container_width=True)
+            st.altair_chart((c.mark_bar(size=10) + c_7day), use_container_width=True)
             st.markdown(f"""\
                 <div style="font-size: small">Daily reported new cases (incl. 7-day average).</div><br/>
                 """, unsafe_allow_html=True)
