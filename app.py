@@ -1,7 +1,6 @@
 import datetime
 from functools import reduce
 import streamlit as st
-from streamlit import caching
 import pandas as pd
 import altair as alt
 import os
