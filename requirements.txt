@@ -1,4 +1,3 @@
-lxml
 requests
 pip
 pandas
