@@ -1,6 +1,0 @@
-libhdf5-serial-dev 
-netcdf-bin 
-libnetcdf-dev
-libproj-dev
-libgeos-dev
-build-essential
