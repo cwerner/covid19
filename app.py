@@ -1,5 +1,6 @@
 import datetime
 from functools import reduce
+from pkg_resources import normalize_path
 import streamlit as st
 import pandas as pd
 import altair as alt
@@ -48,12 +49,14 @@ def read_data():
 
     return (confirmed, deaths, recovered)
 
-def transform(df, collabel='confirmed'):
+def transform(df, collabel='confirmed', norm=False):
     dfm = pd.melt(df)
     dfm["date"] = pd.to_datetime(dfm.variable, infer_datetime_format=True)
     dfm = dfm.set_index("date")
     dfm = dfm[["value"]]
     dfm.columns = [collabel]
+    if norm:
+        dfm[[collabel]] = dfm[[collabel]] / (inhabitants[norm]* 1_000_000) * 100_000
     return dfm
 
 def transform2(df, collabel='confirmed'):
@@ -65,6 +68,7 @@ def transform2(df, collabel='confirmed'):
     return dfm
 
 def main():
+    st.set_page_config(page_title="Covid-19", page_icon=None, layout='centered', initial_sidebar_state='auto')
     st.title("🦠 Covid-19 Data Explorer")
     st.markdown("""\
         This app illustrates the spread of COVID-19 in select countries of Europe over time.
@@ -174,22 +178,26 @@ def main():
             f""" (currently only {', '.join(countries)}).  
             """
             """  
-            ℹ️ You can select countries and plot data as cummulative counts or new active cases per day. 
+            ℹ️ You can select countries and plot data as cummulative counts or new active cases per day.
+            Normalize scales the values to counts per 100k inhabitants. 
             """)
 
         # selections
-        selection = st.selectbox("Select country:", countries)
-        cummulative = st.radio("Display type:", ["total", "new cases"])
-        #scaletransform = st.radio("Plot y-axis", ["linear", "pow"])
+        col1, col2, col3, _, _ = st.beta_columns(5)
+
+        selection = col1.selectbox("Select country:", countries)
+        cummulative = col2.radio("Display type:", ["total", "new cases"])
+        norm_sel = col3.radio("Normalize:", ["no", "yes"])
+        normalize = selection if norm_sel == "yes" else False
         
         confirmed = confirmed[confirmed["Country/Region"] == selection].iloc[:,3:]
-        confirmed = transform(confirmed, collabel="confirmed")
+        confirmed = transform(confirmed, collabel="confirmed", norm=normalize)
 
         deaths = deaths[deaths["Country/Region"] == selection].iloc[:,3:]
-        deaths = transform(deaths, collabel="deaths")
+        deaths = transform(deaths, collabel="deaths", norm=normalize)
 
         recovered = recovered[recovered["Country/Region"] == selection].iloc[:,3:]
-        recovered = transform(recovered, collabel="recovered")
+        recovered = transform(recovered, collabel="recovered", norm=normalize)
 
         
         df = reduce(lambda a,b: pd.merge(a,b, on='date'), [confirmed, recovered, deaths])
@@ -213,9 +221,11 @@ def main():
             {val: i for i, val in enumerate(variables[::-1])}
         )
 
+        cases_label = "Cases" if normalize == False else "Cases per 100k"
+
         c = alt.Chart(dfm.reset_index()).mark_bar().properties(height=200).encode(
             x=alt.X("date:T", title="Date"),
-            y=alt.Y("sum(value):Q", title="Cases", scale=alt.Scale(type='linear')),
+            y=alt.Y("sum(value):Q", title=cases_label, scale=alt.Scale(type='linear')),
             color=alt.Color('variable:N', title="Category", scale=SCALE), #, sort=alt.EncodingSortField('value', order='ascending')),
             order='order'
         )
@@ -227,7 +237,7 @@ def main():
             rm_7day = df[['new']].rolling('7D').mean().rename(columns={'new': 'value'})
             c_7day = alt.Chart(rm_7day.reset_index()).properties(height=200).mark_line(strokeDash=[1,1], color='red').encode(
                 x=alt.X("date:T", title="Date"),
-                y=alt.Y("value:Q", title="Cases", scale=alt.Scale(type='linear')),
+                y=alt.Y("value:Q", title=cases_label, scale=alt.Scale(type='linear')),
             )
             st.altair_chart((c + c_7day), use_container_width=True)
             st.markdown(f"""\
