@@ -30,7 +30,8 @@ inhabitants = {'Germany': 83.16,
             'Norway': 5.36,
             'Denmark': 5.77}
 
-@st.cache
+# invalidate cache every 1h so user gets new data without resetting cache in the hamburger menue 
+@st.cache(ttl=60*60*1)
 def read_data():
     BASEURL = "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series"    
     url_confirmed = f"{BASEURL}/time_series_covid19_confirmed_global.csv"
